@@ -1,0 +1,34 @@
+# Deployment backend (atur IP/host sesuai server Anda)
+# - Reuse Ollama yang berjalan native di host (port 11434) — otomatis pakai GPU
+# - Whisper berjalan di GPU (container diberi akses GPU via nvidia runtime)
+# - network_mode host agar container bisa menjangkau Ollama di 127.0.0.1:11434
+services:
+  api:
+    build: .
+    network_mode: host
+    gpus: all
+    environment:
+      WHISPER_MODEL: ${WHISPER_MODEL:-large-v3}
+      WHISPER_DEVICE: ${WHISPER_DEVICE:-cuda}
+      WHISPER_COMPUTE: ${WHISPER_COMPUTE:-float16}
+      OLLAMA_URL: http://127.0.0.1:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma3:12b}
+      # Layer LLM ke GPU (99=semua). gemma4 perlu dipaksa krn Ollama 0.21.0
+      # under-estimate VRAM. Turunkan (mis. 40) bila GPU dipakai proses lain.
+      OLLAMA_NUM_GPU: ${OLLAMA_NUM_GPU:-99}
+      OLLAMA_NUM_CTX: ${OLLAMA_NUM_CTX:-4096}
+      # Diarisasi: ambang clustering & durasi min giliran bicara (kurangi over-segmentasi)
+      DIARIZE: ${DIARIZE:-true}
+      DIARIZE_THRESHOLD: ${DIARIZE_THRESHOLD:-0.8}
+      DIARIZE_MIN_ON: ${DIARIZE_MIN_ON:-1.0}
+      DIARIZE_NUM_SPEAKERS: ${DIARIZE_NUM_SPEAKERS:-0}
+      UPLOAD_DIR: /data/uploads
+      API_KEY: ${API_KEY:-}
+    volumes:
+      - whisper-models:/root/.cache/huggingface
+      - api-uploads:/data
+    restart: unless-stopped
+
+volumes:
+  whisper-models:
+  api-uploads:

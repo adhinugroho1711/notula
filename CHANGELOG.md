@@ -1,0 +1,69 @@
+# Changelog
+
+Semua perubahan penting pada proyek **Notula** didokumentasikan di sini.
+Format mengikuti [Keep a Changelog](https://keepachangelog.com/), penomoran [SemVer](https://semver.org/).
+
+## [1.10.0] — 2026-06-24
+### Ditambahkan
+- **Rekam "simpan-dulu"**: setelah berhenti merekam, file langsung tersimpan di perangkat dan muncul pilihan **"Proses sekarang"** atau **"Nanti"** — tidak lagi auto-upload, sehingga rekaman aman bila jaringan bermasalah.
+- Tampilan **"Proses sekarang"** untuk rekaman yang belum dikonversi (proses kapan saja saat jaringan stabil).
+
+## [1.9.0] — 2026-06-24
+### Ditambahkan
+- **Durasi audio** ditampilkan berdampingan dengan **lama konversi** (di header detail & ekspor `.txt`).
+- Durasi file impor kini akurat (diisi otomatis dari Whisper, sebelumnya 0).
+
+## [1.8.0 – 1.8.2] — 2026-06-23
+### Ditambahkan
+- **Splash screen** saat aplikasi dibuka (memakai poster aplikasi).
+- **Logo asli** dipakai pada header.
+- **Konfirmasi saat menutup** aplikasi (peringatan khusus bila masih ada proses berjalan/antri); tombol default **Batal** agar tidak tertutup karena Enter.
+
+## [1.7.0] — 2026-06-23
+### Ditambahkan
+- **Lama proses konversi** (waktu transkrip + ringkas di server) dicatat & ditampilkan.
+
+## [1.6.0 – 1.6.1] — 2026-06-23
+### Ditambahkan
+- **Hapus massal** (mode pilih: hapus banyak rekaman sekaligus).
+- **Ekspor notulen ke `.txt`** (per item & banyak item ke satu folder). Sejak 1.6.1, ekspor berisi **notulen saja** (tanpa transkrip).
+
+## [1.5.0] — 2026-06-23
+### Ditambahkan
+- **Antrian multi-file**: impor banyak file sekaligus, diproses berurutan (FIFO sesuai urutan upload) dengan nomor antrian terlihat.
+
+## [1.4.0] — 2026-06-22
+### Diubah
+- **Format notulen baru** yang lebih kaya & rapi: **Judul · Ikhtisar · Tugas Penting · Garis Besar · Wawasan Cerdas** (dengan emoji), menggantikan format lama.
+
+## [1.3.0] — 2026-06-22
+### Ditambahkan
+- Bagian **Pembahasan** — uraian mendetail per topik (konteks, angka, alasan, kesepakatan).
+
+## [1.2.0] — 2026-06-22
+### Ditambahkan
+- **Progress transkrip real-time** (persen + estimasi sisa waktu) untuk semua tahap.
+- **Tahan koneksi putus**: `job_id` disimpan, polling otomatis menyambung ulang, auto-resume saat app dibuka, tombol "Coba lagi" pintar.
+### Diubah
+- STT ke **`large-v3-turbo`** (lebih cepat).
+### Diperbaiki
+- Diarisasi tidak lagi memblokir API (dijalankan di proses terpisah).
+
+## [1.1.0] — 2026-06-21
+### Ditambahkan
+- UI modern, **indikator level suara mikrofon** real-time, **impor file** (audio/video), **progress upload**, ikon aplikasi, layout responsif.
+- Installer macOS (`.dmg`) & skrip installer Windows (Inno Setup).
+
+## [1.0.0] — 2026-06-19
+### Ditambahkan
+- Rilis awal: **rekam meeting → transkrip (faster-whisper) → notulen terstruktur (Ollama)**.
+- Riwayat lokal (SQLite), edit & bagikan hasil, backend FastAPI stateless via Docker.
+
+---
+
+### Catatan backend (lintas versi)
+- Model LLM: `qwen3` → `gemma3:12b` → **`gemma4:12b`** (kualitas notulen terbaik untuk GPU 12 GB).
+- **Anti-halusinasi Whisper**: `condition_on_previous_text=false`, ambang `compression_ratio`/`log_prob`/`no_speech`, `hallucination_silence_threshold`.
+- **Diarisasi dimatikan** secara default (lambat di CPU & label kurang akurat; format notulen tidak memerlukannya).
+- `OLLAMA_NUM_CTX` dinaikkan ke **8192** (ringkasan rapat pendek-menengah sekali jalan).
+- Backend **stateless**: audio dihapus setelah proses + folder upload dibersihkan saat startup.

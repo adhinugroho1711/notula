@@ -1,0 +1,6 @@
+fastapi>=0.115
+uvicorn[standard]>=0.32
+faster-whisper>=1.1
+httpx>=0.28
+python-multipart>=0.0.18
+sherpa-onnx>=1.12

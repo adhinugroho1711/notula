@@ -1,0 +1,61 @@
+# ===== Umum =====
+.DS_Store
+*.log
+*.swp
+.idea/
+.vscode/
+
+# ===== Rahasia / konfigurasi lokal (JANGAN di-commit) =====
+.env
+*.env
+!**/ephemeral/*.env
+backend/.env
+**/secrets.*
+
+# ===== Output build / installer =====
+dist/
+*.dmg
+*.exe
+
+# ===== Flutter / Dart (mobile/) =====
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/build/
+mobile/.packages
+mobile/pubspec.lock
+mobile/**/GeneratedPluginRegistrant.*
+mobile/**/Flutter/ephemeral/
+mobile/**/flutter_export_environment.sh
+
+# iOS
+mobile/ios/Pods/
+mobile/ios/.symlinks/
+mobile/ios/Flutter/Flutter.framework
+mobile/ios/Flutter/Flutter.podspec
+mobile/ios/Runner/GeneratedPluginRegistrant.*
+
+# macOS
+mobile/macos/Pods/
+mobile/macos/Flutter/GeneratedPluginRegistrant.swift
+mobile/macos/Flutter/ephemeral/
+
+# Android
+mobile/android/.gradle/
+mobile/android/app/debug
+mobile/android/app/profile
+mobile/android/app/release
+mobile/android/local.properties
+mobile/android/key.properties
+mobile/**/*.keystore
+mobile/**/*.jks
+
+# ===== Python (backend/) =====
+__pycache__/
+*.py[cod]
+backend/venv/
+backend/.venv/
+*.egg-info/
+
+# ===== Sampel/uji (opsional, audio bisa sensitif) =====
+sample_audio/
