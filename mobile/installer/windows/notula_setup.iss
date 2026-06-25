@@ -4,7 +4,7 @@
 ; Hasil: Output\Notula-Setup-1.0.0.exe
 
 #define AppName "Notula"
-#define AppVersion "1.10.0"
+#define AppVersion "1.11.0"
 #define AppExe "notula.exe"
 ; Folder hasil build flutter (relatif terhadap lokasi file .iss ini).
 #define SrcDir "..\..\build\windows\x64\runner\Release"

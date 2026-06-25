@@ -3,6 +3,12 @@
 Semua perubahan penting pada proyek **Notula** didokumentasikan di sini.
 Format mengikuti [Keep a Changelog](https://keepachangelog.com/), penomoran [SemVer](https://semver.org/).
 
+## [1.11.0] — 2026-06-25
+### Ditambahkan
+- **Pemilih perangkat input** di layar Rekam — pilih mikrofon **atau perangkat loopback** (BlackHole di macOS / VB-Cable di Windows) untuk **menangkap audio sistem** saat merekam rapat online (Zoom/Teams/Meet) tanpa harus jadi host.
+### Catatan
+- Indikator "suara terdeteksi/tidak" yang berkedip saat merekam Zoom **bukan bug**: perekaman default hanya menangkap mikrofon; suara peserta lain lewat speaker/headphone. Gunakan perangkat loopback (lihat di atas) atau impor rekaman.
+
 ## [1.10.0] — 2026-06-24
 ### Ditambahkan
 - **Rekam "simpan-dulu"**: setelah berhenti merekam, file langsung tersimpan di perangkat dan muncul pilihan **"Proses sekarang"** atau **"Nanti"** — tidak lagi auto-upload, sehingga rekaman aman bila jaringan bermasalah.

@@ -36,6 +36,24 @@ class _RecordScreenState extends State<RecordScreen> {
 
   static const double _detectThreshold = 0.08; // ambang "ada suara"
 
+  // Perangkat input (mic / loopback seperti BlackHole/VB-Cable).
+  List<InputDevice> _devices = [];
+  InputDevice? _selectedDevice; // null = default sistem
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDevices();
+  }
+
+  Future<void> _loadDevices() async {
+    final ok = await _recorder.hasPermission();
+    if (!ok) return; // daftar device perlu izin mic
+    final devs = await _recorder.inputDevices();
+    if (!mounted) return;
+    setState(() => _devices = devs);
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
@@ -76,7 +94,7 @@ class _RecordScreenState extends State<RecordScreen> {
       });
       return;
     }
-    await _recorder.start();
+    await _recorder.start(device: _selectedDevice);
     await WakelockPlus.enable();
     _ampSub = _recorder.amplitudeStream().listen(_onAmplitude);
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -154,6 +172,69 @@ class _RecordScreenState extends State<RecordScreen> {
         MaterialPageRoute(builder: (_) => DetailScreen(meeting: meeting)));
   }
 
+  Widget _devicePicker() {
+    final value = _selectedDevice?.id ?? '';
+    final loopback = _selectedDevice != null;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.headset_mic_outlined,
+                  size: 18, color: Colors.grey.shade700),
+              const SizedBox(width: 8),
+              const Text('Sumber audio',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+              const Spacer(),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                tooltip: 'Muat ulang daftar perangkat',
+                onPressed: _loadDevices,
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: AppTheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                isExpanded: true,
+                value: value,
+                items: [
+                  const DropdownMenuItem(
+                      value: '', child: Text('Default sistem (mikrofon)')),
+                  ..._devices.map((d) => DropdownMenuItem(
+                      value: d.id,
+                      child: Text(d.label, overflow: TextOverflow.ellipsis))),
+                ],
+                onChanged: (id) => setState(() {
+                  _selectedDevice = (id == null || id.isEmpty)
+                      ? null
+                      : _devices.firstWhere((d) => d.id == id);
+                }),
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            loopback
+                ? 'Menangkap dari perangkat ini. Pastikan output sistem diarahkan ke sana (mis. Multi-Output Device).'
+                : 'Untuk rekam Zoom/online: pilih perangkat loopback (BlackHole di Mac / VB-Cable di Windows) yang menangkap audio sistem. Default hanya menangkap mikrofon.',
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600, height: 1.35),
+          ),
+        ],
+      ),
+    );
+  }
+
   bool get _soundDetected => _recording && !_paused && _level > _detectThreshold;
   bool get _micProblem =>
       _recording && !_paused && _silentSeconds >= 4; // 4 dtk hening
@@ -168,6 +249,7 @@ class _RecordScreenState extends State<RecordScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              if (!_recording) _devicePicker(),
               const Spacer(flex: 2),
               _micVisual(),
               const SizedBox(height: 28),
