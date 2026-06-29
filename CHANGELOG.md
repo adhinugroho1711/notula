@@ -3,6 +3,10 @@
 Semua perubahan penting pada proyek **Notula** didokumentasikan di sini.
 Format mengikuti [Keep a Changelog](https://keepachangelog.com/), penomoran [SemVer](https://semver.org/).
 
+## [1.11.2] — 2026-06-29
+### Diubah
+- **Panduan Sumber Audio lebih jelas**: dropdown menandai tiap perangkat (`· mikrofon` / `· audio sistem`), dan ada panduan per-skenario — **rapat tatap muka/tanpa Zoom → "Default sistem (mikrofon)"**, **rapat online → perangkat loopback** (disebut langsung namanya bila terdeteksi, mis. "BlackHole 2ch").
+
 ## [1.11.1] — 2026-06-29
 ### Diperbaiki
 - Layar **Rekam**: tombol rekam & label "Siap merekam" tidak lagi terpotong setelah penambahan pemilih sumber audio — kontrol kini disematkan di bawah dan bagian tengah bisa di-scroll.

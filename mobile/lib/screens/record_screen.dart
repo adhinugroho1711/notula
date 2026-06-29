@@ -174,7 +174,8 @@ class _RecordScreenState extends State<RecordScreen> {
 
   Widget _devicePicker() {
     final value = _selectedDevice?.id ?? '';
-    final loopback = _selectedDevice != null;
+    final loopback =
+        _selectedDevice != null && _isLoopback(_selectedDevice!.label);
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
       child: Column(
@@ -210,10 +211,16 @@ class _RecordScreenState extends State<RecordScreen> {
                 value: value,
                 items: [
                   const DropdownMenuItem(
-                      value: '', child: Text('Default sistem (mikrofon)')),
+                      value: '',
+                      child: Text('Default sistem (mikrofon)',
+                          overflow: TextOverflow.ellipsis)),
                   ..._devices.map((d) => DropdownMenuItem(
                       value: d.id,
-                      child: Text(d.label, overflow: TextOverflow.ellipsis))),
+                      child: Text(
+                          _isLoopback(d.label)
+                              ? '${d.label}  ·  audio sistem'
+                              : '${d.label}  ·  mikrofon',
+                          overflow: TextOverflow.ellipsis))),
                 ],
                 onChanged: (id) => setState(() {
                   _selectedDevice = (id == null || id.isEmpty)
@@ -223,15 +230,77 @@ class _RecordScreenState extends State<RecordScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            loopback
-                ? 'Menangkap dari perangkat ini. Pastikan output sistem diarahkan ke sana (mis. Multi-Output Device).'
-                : 'Untuk rekam Zoom/online: pilih perangkat loopback (BlackHole di Mac / VB-Cable di Windows) yang menangkap audio sistem. Default hanya menangkap mikrofon.',
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600, height: 1.35),
-          ),
+          const SizedBox(height: 8),
+          _sourceGuide(loopback),
         ],
       ),
+    );
+  }
+
+  /// Tebak apakah sebuah perangkat adalah loopback (penangkap audio sistem).
+  bool _isLoopback(String label) {
+    final l = label.toLowerCase();
+    const keys = [
+      'blackhole', 'vb-cable', 'vb-audio', 'cable output', 'stereo mix',
+      'loopback', 'soundflower', 'voicemeeter', 'aggregate', 'multi-output',
+    ];
+    return keys.any(l.contains);
+  }
+
+  /// Panduan konkret: skenario online vs tatap muka, menyebut nama device asli.
+  Widget _sourceGuide(bool loopbackSelected) {
+    // cari perangkat loopback yang terdeteksi (untuk disebut namanya)
+    final loop = _devices.where((d) => _isLoopback(d.label)).toList();
+    final loopName = loop.isNotEmpty ? '"${loop.first.label}"' : null;
+
+    Widget row(IconData ic, Color c, String title, String body) => Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(ic, size: 15, color: c),
+              const SizedBox(width: 8),
+              Expanded(
+                child: RichText(
+                  text: TextSpan(
+                    style: TextStyle(
+                        fontSize: 12, color: Colors.grey.shade700, height: 1.4),
+                    children: [
+                      TextSpan(
+                          text: '$title: ',
+                          style: const TextStyle(fontWeight: FontWeight.w700)),
+                      TextSpan(text: body),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        row(Icons.groups_rounded, const Color(0xFF0EA5E9),
+            'Rapat tatap muka / tanpa Zoom',
+            'pilih "Default sistem (mikrofon)" — menangkap suara di sekitar laptop.'),
+        row(Icons.videocam_rounded, AppTheme.primary, 'Rapat online (Zoom/Teams/Meet)',
+            loopName != null
+                ? 'pilih $loopName (audio sistem) agar suara semua peserta ikut terekam.'
+                : 'pasang perangkat loopback (BlackHole di Mac / VB-Cable di Windows), lalu muat ulang (⟳) & pilih di sini. Tanpa itu, hanya mikrofon yang terekam.'),
+        if (loopbackSelected)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(
+              'Pastikan output suara sistem diarahkan ke perangkat ini (mis. Multi-Output Device) agar Anda tetap mendengar rapat.',
+              style: TextStyle(
+                  fontSize: 11.5,
+                  color: Colors.grey.shade500,
+                  fontStyle: FontStyle.italic,
+                  height: 1.35),
+            ),
+          ),
+      ],
     );
   }
 
