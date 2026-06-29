@@ -3,6 +3,10 @@
 Semua perubahan penting pada proyek **Notula** didokumentasikan di sini.
 Format mengikuti [Keep a Changelog](https://keepachangelog.com/), penomoran [SemVer](https://semver.org/).
 
+## [1.11.1] — 2026-06-29
+### Diperbaiki
+- Layar **Rekam**: tombol rekam & label "Siap merekam" tidak lagi terpotong setelah penambahan pemilih sumber audio — kontrol kini disematkan di bawah dan bagian tengah bisa di-scroll.
+
 ## [1.11.0] — 2026-06-25
 ### Ditambahkan
 - **Pemilih perangkat input** di layar Rekam — pilih mikrofon **atau perangkat loopback** (BlackHole di macOS / VB-Cable di Windows) untuk **menangkap audio sistem** saat merekam rapat online (Zoom/Teams/Meet) tanpa harus jadi host.

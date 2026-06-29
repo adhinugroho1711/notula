@@ -250,34 +250,48 @@ class _RecordScreenState extends State<RecordScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               if (!_recording) _devicePicker(),
-              const Spacer(flex: 2),
-              _micVisual(),
-              const SizedBox(height: 28),
-              _levelBars(),
-              const SizedBox(height: 32),
-              Text(
-                _fmtElapsed(_elapsed),
-                style: const TextStyle(
-                  fontSize: 56,
-                  fontWeight: FontWeight.w200,
-                  letterSpacing: 1,
-                  fontFeatures: [FontFeature.tabularFigures()],
+              // Bagian tengah: bisa scroll & terpusat agar tak pernah terpotong.
+              Expanded(
+                child: Center(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: 16),
+                        _micVisual(),
+                        const SizedBox(height: 24),
+                        _levelBars(),
+                        const SizedBox(height: 28),
+                        Text(
+                          _fmtElapsed(_elapsed),
+                          style: const TextStyle(
+                            fontSize: 56,
+                            fontWeight: FontWeight.w200,
+                            letterSpacing: 1,
+                            fontFeatures: [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        _statusLabel(),
+                        if (_error != null) ...[
+                          const SizedBox(height: 16),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 40),
+                            child: Text(_error!,
+                                textAlign: TextAlign.center,
+                                style:
+                                    const TextStyle(color: AppTheme.statusFailed)),
+                          ),
+                        ],
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(height: 10),
-              _statusLabel(),
-              if (_error != null) ...[
-                const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 40),
-                  child: Text(_error!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: AppTheme.statusFailed)),
-                ),
-              ],
-              const Spacer(flex: 3),
+              // Kontrol rekam — selalu terlihat di bawah.
               _controls(),
-              const SizedBox(height: 48),
+              const SizedBox(height: 32),
             ],
           ),
         ),
