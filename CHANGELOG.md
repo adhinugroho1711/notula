@@ -3,6 +3,10 @@
 Semua perubahan penting pada proyek **Notula** didokumentasikan di sini.
 Format mengikuti [Keep a Changelog](https://keepachangelog.com/), penomoran [SemVer](https://semver.org/).
 
+## [1.12.2] — 2026-06-30
+### Diperbaiki
+- **Gema/echo pada rekaman "Audio sistem + mikrofon"**: matikan monitoring ke speaker (cegah feedback) + aktifkan peredam gema (AEC) pada mikrofon. Untuk hasil paling bersih, gunakan **headphone** saat merekam audio sistem.
+
 ## [1.12.1] — 2026-06-30
 ### Ditambahkan
 - Tombol **"Pilih semua"** / "Batal semua" di mode pilih — hapus atau ekspor **semua** rekaman sekaligus (tidak hanya satu per satu atau pilih manual).

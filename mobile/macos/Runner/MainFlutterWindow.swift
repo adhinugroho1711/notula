@@ -83,6 +83,7 @@ final class SystemAudioRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
   private var stream: SCStream?
   private let engine = AVAudioEngine()
   private let player = AVAudioPlayerNode()
+  private let subMixer = AVAudioMixerNode()  // titik mix utk direkam (bukan ke speaker)
   private var file: AVAudioFile?
   private var outputPath: String = ""
   private var converter: AVAudioConverter?
@@ -136,27 +137,36 @@ final class SystemAudioRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 
   private func setupEngine(includeMic: Bool) throws {
     engine.attach(player)
-    let mixer = engine.mainMixerNode
-    engine.connect(player, to: mixer, format: engineFormat)
+    engine.attach(subMixer)
+    engine.connect(player, to: subMixer, format: engineFormat)
 
     if includeMic {
       let input = engine.inputNode
+      // Peredam gema (AEC): batalkan suara speaker yang bocor ke mic agar audio
+      // sistem tidak terekam ganda (mengurangi gema saat tanpa headphone).
+      try? input.setVoiceProcessingEnabled(true)
       let inFormat = input.inputFormat(forBus: 0)
       if inFormat.sampleRate > 0 {
-        engine.connect(input, to: mixer, format: inFormat)
+        engine.connect(input, to: subMixer, format: inFormat)
       }
     }
 
-    let mixFormat = mixer.outputFormat(forBus: 0)
+    // subMixer harus terhubung ke mainMixer agar diproses, TAPI output ke
+    // speaker dimatikan (outputVolume = 0) supaya tidak ada monitoring →
+    // tidak ada feedback/gema. Yang direkam diambil dari TAP subMixer.
+    engine.connect(subMixer, to: engine.mainMixerNode, format: nil)
+    engine.mainMixerNode.outputVolume = 0
+
+    let tapFormat = subMixer.outputFormat(forBus: 0)
     let settings: [String: Any] = [
       AVFormatIDKey: kAudioFormatMPEG4AAC,
-      AVSampleRateKey: mixFormat.sampleRate,
-      AVNumberOfChannelsKey: mixFormat.channelCount,
+      AVSampleRateKey: tapFormat.sampleRate,
+      AVNumberOfChannelsKey: tapFormat.channelCount,
       AVEncoderBitRateKey: 96000,
     ]
     file = try AVAudioFile(forWriting: URL(fileURLWithPath: outputPath), settings: settings)
 
-    mixer.installTap(onBus: 0, bufferSize: 4096, format: mixFormat) { [weak self] buffer, _ in
+    subMixer.installTap(onBus: 0, bufferSize: 4096, format: tapFormat) { [weak self] buffer, _ in
       try? self?.file?.write(from: buffer)
     }
     engine.prepare()
@@ -220,7 +230,7 @@ final class SystemAudioRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
   }
 
   private func teardown() {
-    engine.mainMixerNode.removeTap(onBus: 0)
+    subMixer.removeTap(onBus: 0)
     if player.isPlaying { player.stop() }
     if engine.isRunning { engine.stop() }
     file = nil
