@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -107,34 +108,29 @@ String buildMarkdown(Meeting m) {
   return b.toString();
 }
 
-/// Saring teks agar aman dirender font bawaan PDF (Helvetica) — petakan
-/// karakter tipografi ke ASCII & buang karakter non-ASCII (cegah kotak "tofu").
-String _pdfSafe(String t) {
-  const map = {
-    '•': '-', '◦': '-', '▪': '-', '‣': '-', '·': '-',
-    '–': '-', '—': '-', '−': '-',
-    '“': '"', '”': '"', '„': '"', '‟': '"',
-    '‘': "'", '’': "'", '‚': "'",
-    '…': '...', '→': '->', '←': '<-', '⇒': '=>', '×': 'x',
-    '™': '(TM)', '®': '(R)', '©': '(C)', ' ': ' ',
-  };
-  final sb = StringBuffer();
-  for (final r in t.runes) {
-    final ch = String.fromCharCode(r);
-    if (map.containsKey(ch)) {
-      sb.write(map[ch]);
-    } else if (r < 128) {
-      sb.write(ch);
-    }
-    // karakter non-ASCII lain (emoji, dll) dibuang agar tidak jadi kotak
-  }
-  return sb.toString();
+/// Buang emoji/piktograf yang tidak ada di font Roboto (cegah kotak "tofu").
+/// Karakter lain (bullet, kutip, dash, aksen) dipertahankan — Roboto mendukungnya.
+final RegExp _emoji = RegExp(
+    r'[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE00}-\u{FE0F}\u{1F1E6}-\u{1F1FF}\u{2300}-\u{23FF}]',
+    unicode: true);
+String _pdfSafe(String t) => t.replaceAll(_emoji, '').trim();
+
+pw.Font? _pdfRegular;
+pw.Font? _pdfBold;
+
+Future<void> _loadFonts() async {
+  _pdfRegular ??=
+      pw.Font.ttf(await rootBundle.load('assets/fonts/Roboto-Regular.ttf'));
+  _pdfBold ??=
+      pw.Font.ttf(await rootBundle.load('assets/fonts/Roboto-Bold.ttf'));
 }
 
 /// Notulen sebagai PDF (bytes).
 Future<Uint8List> buildPdfBytes(Meeting m) async {
+  await _loadFonts();
   final s = m.summary;
-  final doc = pw.Document();
+  final doc = pw.Document(
+      theme: pw.ThemeData.withFont(base: _pdfRegular, bold: _pdfBold));
   final widgets = <pw.Widget>[
     pw.Text(_pdfSafe(_title(m)),
         style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
@@ -150,7 +146,7 @@ Future<Uint8List> buildPdfBytes(Meeting m) async {
           style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)));
   pw.Widget bullet(String t) => pw.Padding(
       padding: const pw.EdgeInsets.only(left: 8, bottom: 2),
-      child: pw.Text(_pdfSafe('- $t'), style: const pw.TextStyle(fontSize: 11)));
+      child: pw.Text(_pdfSafe('•  $t'), style: const pw.TextStyle(fontSize: 11)));
 
   if (s != null) {
     if (s.ikhtisar.isNotEmpty) {

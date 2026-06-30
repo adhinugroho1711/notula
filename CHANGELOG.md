@@ -3,6 +3,10 @@
 Semua perubahan penting pada proyek **Notula** didokumentasikan di sini.
 Format mengikuti [Keep a Changelog](https://keepachangelog.com/), penomoran [SemVer](https://semver.org/).
 
+## [1.13.2] — 2026-06-30
+### Diubah
+- **PDF kini menyematkan font Roboto** → bullet "•", tanda kutip/dash, dan karakter beraksen tampil benar (tidak lagi diubah jadi ASCII). Hanya emoji yang dihilangkan dari PDF.
+
 ## [1.13.1] — 2026-06-30
 ### Diperbaiki
 - **Ekspor PDF muncul kotak (□/tofu)** pada bullet "•" & karakter khusus — font bawaan PDF tidak punya glyph-nya. Teks PDF kini disaring ke karakter aman (bullet → "-", kutip/dash pintar → ASCII).
