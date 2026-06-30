@@ -57,7 +57,10 @@ def transcribe_audio(
         language=language,
         vad_filter=True,  # lewati bagian hening — penting untuk rekaman meeting panjang
         initial_prompt=INITIAL_PROMPT,
-        temperature=0.0,  # deterministik
+        # Fallback temperature (rekomendasi resmi whisper-large-v3): coba 0.0 dulu
+        # (deterministik); bila segmen gagal ambang di bawah (berulang/low-conf),
+        # ulang dengan temperature lebih tinggi → pulih dari loop/halusinasi.
+        temperature=[0.0, 0.2, 0.4, 0.6, 0.8, 1.0],
         # --- Anti-halusinasi (penting untuk audio rapat: banyak hening/noise) ---
         # Jangan mengondisikan ke teks sebelumnya → cegah loop & frasa "mengarang"
         # yang merembet antar-segmen (penyebab halusinasi #1 di Whisper).

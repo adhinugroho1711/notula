@@ -11,6 +11,10 @@ services:
       WHISPER_MODEL: ${WHISPER_MODEL:-large-v3}
       WHISPER_DEVICE: ${WHISPER_DEVICE:-cuda}
       WHISPER_COMPUTE: ${WHISPER_COMPUTE:-float16}
+      # Model sudah ter-cache; paksa offline agar load TIDAK menghubungi HF
+      # (server tak punya akses keluar → tanpa ini load model menggantung).
+      HF_HUB_OFFLINE: '1'
+      TRANSFORMERS_OFFLINE: '1'
       OLLAMA_URL: http://127.0.0.1:11434
       OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma3:12b}
       # Layer LLM ke GPU (99=semua). gemma4 perlu dipaksa krn Ollama 0.21.0
