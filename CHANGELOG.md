@@ -3,6 +3,10 @@
 Semua perubahan penting pada proyek **Notula** didokumentasikan di sini.
 Format mengikuti [Keep a Changelog](https://keepachangelog.com/), penomoran [SemVer](https://semver.org/).
 
+## [1.12.1] — 2026-06-30
+### Ditambahkan
+- Tombol **"Pilih semua"** / "Batal semua" di mode pilih — hapus atau ekspor **semua** rekaman sekaligus (tidak hanya satu per satu atau pilih manual).
+
 ## [1.12.0] — 2026-06-30
 ### Ditambahkan
 - **Rekam audio sistem + mikrofon native (macOS 13+)** — opsi sumber audio "🔊 Audio sistem + mikrofon" merekam suara semua peserta Zoom/Teams/Meet **digabung** dengan suara Anda, **tanpa perlu BlackHole/VB-Cable**. Memakai ScreenCaptureKit + AVAudioEngine via platform channel. Saat pertama dipakai, macOS meminta izin **Perekaman Layar**.

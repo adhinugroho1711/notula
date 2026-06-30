@@ -177,7 +177,25 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _toggleSelectAll() {
+    final all = _repo.meetings
+        .where((m) => m.id != null)
+        .map((m) => m.id!)
+        .toSet();
+    setState(() {
+      if (all.isNotEmpty && _selected.length >= all.length) {
+        _selected.clear(); // semua sudah terpilih → batalkan semua
+      } else {
+        _selected
+          ..clear()
+          ..addAll(all); // pilih semua
+      }
+    });
+  }
+
   Widget _selectionHeader() {
+    final total = _repo.meetings.length;
+    final allSelected = total > 0 && _selected.length >= total;
     return Container(
       padding: const EdgeInsets.fromLTRB(8, 12, 12, 8),
       child: Row(
@@ -191,6 +209,15 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Text('${_selected.length} dipilih',
                 style: const TextStyle(
                     fontSize: 18, fontWeight: FontWeight.w700)),
+          ),
+          TextButton.icon(
+            icon: Icon(
+                allSelected
+                    ? Icons.remove_done_rounded
+                    : Icons.select_all_rounded,
+                size: 20),
+            label: Text(allSelected ? 'Batal semua' : 'Pilih semua'),
+            onPressed: total == 0 ? null : _toggleSelectAll,
           ),
           IconButton(
             icon: const Icon(Icons.download_rounded),
