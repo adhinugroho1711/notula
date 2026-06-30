@@ -142,9 +142,6 @@ final class SystemAudioRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 
     if includeMic {
       let input = engine.inputNode
-      // Peredam gema (AEC): batalkan suara speaker yang bocor ke mic agar audio
-      // sistem tidak terekam ganda (mengurangi gema saat tanpa headphone).
-      try? input.setVoiceProcessingEnabled(true)
       let inFormat = input.inputFormat(forBus: 0)
       if inFormat.sampleRate > 0 {
         engine.connect(input, to: subMixer, format: inFormat)

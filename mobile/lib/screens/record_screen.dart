@@ -108,13 +108,21 @@ class _RecordScreenState extends State<RecordScreen> {
     if (_useSystemAudio) {
       try {
         _systemPath = await _recorder.newRecordingPath();
-        await SystemAudioCapture.start(_systemPath!, includeMic: true);
+        // Timeout: bila izin Perekaman Layar belum aktif, panggilan native bisa
+        // menggantung — jangan biarkan UI diam selamanya.
+        await SystemAudioCapture.start(_systemPath!, includeMic: true)
+            .timeout(const Duration(seconds: 12));
       } catch (e) {
+        try {
+          await SystemAudioCapture.stop();
+        } catch (_) {}
         setState(() {
           _starting = false;
-          _error = 'Gagal merekam audio sistem. Pastikan izin "Perekaman Layar" '
-              'untuk Notula aktif di System Settings → Privacy & Security → '
-              'Screen Recording, lalu coba lagi.';
+          _error = 'Gagal merekam audio sistem.\n\n'
+              'Aktifkan izin "Perekaman Layar" untuk Notula di System Settings → '
+              'Privacy & Security → Screen Recording, lalu TUTUP & buka kembali '
+              'aplikasi, baru coba lagi. Jika tetap gagal, gunakan opsi mikrofon '
+              'atau perangkat loopback.';
         });
         return;
       }
