@@ -3,6 +3,12 @@
 Semua perubahan penting pada proyek **Notula** didokumentasikan di sini.
 Format mengikuti [Keep a Changelog](https://keepachangelog.com/), penomoran [SemVer](https://semver.org/).
 
+## [1.13.0] — 2026-06-30
+### Ditambahkan
+- **Pencarian & urutkan riwayat**: cari rekaman berdasarkan judul/isi notulen, urutkan (Terbaru / Terlama / Judul A-Z).
+- **Ekspor PDF & Markdown** (selain TXT) — pilih format saat ekspor, baik per item maupun banyak item.
+- **Ubah judul cepat & hapus** lewat menu (⋮) di tiap kartu rekaman.
+
 ## [1.12.3] — 2026-06-30
 ### Diperbaiki
 - **Mode "Audio sistem + mikrofon" tidak merekam / diam** setelah klik Mulai (regresi v1.12.2): peredam gema (AEC) yang membuat engine macet **dihapus**. Ditambah **timeout + pesan jelas** bila izin Perekaman Layar belum aktif (aktifkan izin, lalu tutup & buka ulang aplikasi). Anti-gema tetap dijaga via mematikan monitoring speaker; pakai **headphone** untuk hasil paling bersih.

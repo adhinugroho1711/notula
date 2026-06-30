@@ -7,6 +7,7 @@ import '../models/meeting.dart';
 import '../services/export_service.dart';
 import '../services/meeting_repository.dart';
 import '../theme.dart';
+import '../widgets/export_format.dart';
 import '../widgets/responsive.dart';
 import 'detail_screen.dart';
 import 'record_screen.dart';
@@ -24,6 +25,36 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool _selectMode = false;
   final Set<int> _selected = {};
+
+  String _query = '';
+  _SortMode _sort = _SortMode.newest;
+
+  /// Daftar meeting setelah difilter (pencarian) & diurutkan.
+  List<Meeting> _visible(List<Meeting> all) {
+    final q = _query.trim().toLowerCase();
+    var list = all;
+    if (q.isNotEmpty) {
+      list = all.where((m) {
+        final judul = m.summary?.judul ?? '';
+        final ikh = m.summary?.ikhtisar ?? '';
+        return m.title.toLowerCase().contains(q) ||
+            judul.toLowerCase().contains(q) ||
+            ikh.toLowerCase().contains(q);
+      }).toList();
+    } else {
+      list = List.of(all);
+    }
+    switch (_sort) {
+      case _SortMode.newest:
+        list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      case _SortMode.oldest:
+        list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      case _SortMode.title:
+        list.sort((a, b) =>
+            a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+    }
+    return list;
+  }
 
   void _enterSelect(Meeting m) {
     setState(() {
@@ -84,11 +115,13 @@ class _HomeScreenState extends State<HomeScreen> {
           content: Text('Tidak ada hasil selesai untuk diekspor.')));
       return;
     }
+    final fmt = await showExportFormatPicker(context);
+    if (fmt == null || !mounted) return;
     try {
-      final n = await exportManyTxt(items);
+      final n = await exportMany(items, fmt);
       if (!mounted || n < 0) return;
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$n file .txt tersimpan.')));
+          SnackBar(content: Text('$n file .${fmt.ext} tersimpan.')));
       _exitSelect();
     } catch (e) {
       if (!mounted) return;
@@ -158,6 +191,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final meetings = _repo.meetings;
+    final shown = _visible(meetings);
     return Scaffold(
       body: SafeArea(
         bottom: false,
@@ -166,8 +200,13 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _selectMode ? _selectionHeader() : _header(meetings.length),
+              if (!_selectMode && meetings.isNotEmpty) _searchSortBar(),
               Expanded(
-                child: meetings.isEmpty ? _empty() : _list(meetings),
+                child: meetings.isEmpty
+                    ? _empty()
+                    : (shown.isEmpty
+                        ? _noResults()
+                        : _list(shown)),
               ),
             ],
           ),
@@ -175,6 +214,86 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButton: _selectMode ? null : _recordFab(),
     );
+  }
+
+  Widget _searchSortBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: SizedBox(
+              height: 42,
+              child: TextField(
+                onChanged: (v) => setState(() => _query = v),
+                decoration: InputDecoration(
+                  hintText: 'Cari judul / isi notulen…',
+                  prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                  isDense: true,
+                  filled: true,
+                  fillColor: AppTheme.surface,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade200),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          PopupMenuButton<_SortMode>(
+            icon: const Icon(Icons.sort_rounded),
+            tooltip: 'Urutkan',
+            initialValue: _sort,
+            onSelected: (v) => setState(() => _sort = v),
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: _SortMode.newest, child: Text('Terbaru')),
+              PopupMenuItem(value: _SortMode.oldest, child: Text('Terlama')),
+              PopupMenuItem(value: _SortMode.title, child: Text('Judul (A-Z)')),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _noResults() => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Text('Tidak ada hasil untuk "$_query".',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey.shade600)),
+        ),
+      );
+
+  Future<void> _renameMeeting(Meeting m) async {
+    final ctrl = TextEditingController(text: m.title);
+    final newTitle = await showDialog<String>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Ubah judul'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: 'Judul rapat'),
+          onSubmitted: (v) => Navigator.pop(c, v),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(c), child: const Text('Batal')),
+          FilledButton(
+              onPressed: () => Navigator.pop(c, ctrl.text),
+              child: const Text('Simpan')),
+        ],
+      ),
+    );
+    if (newTitle != null && newTitle.trim().isNotEmpty) {
+      await _repo.updateTitle(m, newTitle.trim());
+    }
   }
 
   void _toggleSelectAll() {
@@ -342,6 +461,8 @@ class _HomeScreenState extends State<HomeScreen> {
             }
           },
           onLongPress: () => _selectMode ? _toggleSelect(m) : _enterSelect(m),
+          onRename: () => _renameMeeting(m),
+          onDelete: () => _repo.remove(m),
         );
       },
     );
@@ -390,15 +511,41 @@ class _MeetingCard extends StatelessWidget {
   final Meeting meeting;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
+  final VoidCallback? onRename;
+  final VoidCallback? onDelete;
   final bool selectMode;
   final bool selected;
   const _MeetingCard({
     required this.meeting,
     required this.onTap,
     this.onLongPress,
+    this.onRename,
+    this.onDelete,
     this.selectMode = false,
     this.selected = false,
   });
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Hapus rekaman?'),
+        content: Text('"${meeting.title}" akan dihapus permanen.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(c, false),
+              child: const Text('Batal')),
+          FilledButton(
+            style:
+                FilledButton.styleFrom(backgroundColor: AppTheme.statusFailed),
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) onDelete?.call();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -454,8 +601,34 @@ class _MeetingCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right_rounded,
-                    color: Colors.grey.shade400),
+                if (selectMode)
+                  Icon(Icons.chevron_right_rounded, color: Colors.grey.shade400)
+                else
+                  PopupMenuButton<String>(
+                    icon: Icon(Icons.more_vert_rounded,
+                        color: Colors.grey.shade500),
+                    tooltip: 'Opsi',
+                    onSelected: (v) {
+                      if (v == 'rename') onRename?.call();
+                      if (v == 'delete') _confirmDelete(context);
+                    },
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(
+                          value: 'rename',
+                          child: ListTile(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              leading: Icon(Icons.edit_outlined),
+                              title: Text('Ubah judul'))),
+                      PopupMenuItem(
+                          value: 'delete',
+                          child: ListTile(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              leading: Icon(Icons.delete_outline_rounded),
+                              title: Text('Hapus'))),
+                    ],
+                  ),
               ],
             ),
           ),
@@ -533,3 +706,6 @@ String _fmtDuration(int seconds) {
   final s = seconds % 60;
   return '$m:${s.toString().padLeft(2, '0')}';
 }
+
+/// Mode pengurutan daftar rekaman.
+enum _SortMode { newest, oldest, title }

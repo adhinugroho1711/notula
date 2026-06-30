@@ -6,6 +6,7 @@ import '../models/meeting.dart';
 import '../services/export_service.dart';
 import '../services/meeting_repository.dart';
 import '../theme.dart';
+import '../widgets/export_format.dart';
 import '../widgets/responsive.dart';
 import 'edit_screen.dart';
 
@@ -48,8 +49,10 @@ class _DetailScreenState extends State<DetailScreen> {
       .share(ShareParams(text: buildNotulenText(m), subject: m.title));
 
   Future<void> _exportTxt() async {
+    final fmt = await showExportFormatPicker(context);
+    if (fmt == null || !mounted) return;
     try {
-      final path = await exportSingleTxt(m);
+      final path = await exportSingle(m, fmt);
       if (!mounted || path == null) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Tersimpan: $path')),
@@ -104,7 +107,7 @@ class _DetailScreenState extends State<DetailScreen> {
               IconButton(
                   onPressed: _exportTxt,
                   icon: const Icon(Icons.download_rounded),
-                  tooltip: 'Ekspor .txt'),
+                  tooltip: 'Ekspor (TXT/Markdown/PDF)'),
             if (canShare)
               IconButton(
                   onPressed: _share,
