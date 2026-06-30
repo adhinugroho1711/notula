@@ -20,18 +20,24 @@ class MeetingRecorder {
     }
   }
 
-  /// Mulai rekaman, kembalikan path file tujuan. [device] opsional — bila null
-  /// pakai perangkat input default sistem.
-  Future<String> start({InputDevice? device}) async {
+  /// Buat path file rekaman baru di folder lokal (dipakai juga oleh jalur
+  /// perekam native audio-sistem).
+  Future<String> newRecordingPath() async {
     final dir = await getApplicationDocumentsDirectory();
     final recordingsDir = Directory(p.join(dir.path, 'recordings'));
     if (!recordingsDir.existsSync()) {
       recordingsDir.createSync(recursive: true);
     }
-    final path = p.join(
+    return p.join(
       recordingsDir.path,
       'rec_${DateTime.now().millisecondsSinceEpoch}.m4a',
     );
+  }
+
+  /// Mulai rekaman, kembalikan path file tujuan. [device] opsional — bila null
+  /// pakai perangkat input default sistem.
+  Future<String> start({InputDevice? device}) async {
+    final path = await newRecordingPath();
     await _recorder.start(
       RecordConfig(
         encoder: AudioEncoder.aacLc,

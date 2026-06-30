@@ -8,6 +8,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../services/meeting_repository.dart';
 import '../services/recorder.dart';
+import '../services/system_audio.dart';
 import '../theme.dart';
 import 'detail_screen.dart';
 
@@ -39,11 +40,19 @@ class _RecordScreenState extends State<RecordScreen> {
   // Perangkat input (mic / loopback seperti BlackHole/VB-Cable).
   List<InputDevice> _devices = [];
   InputDevice? _selectedDevice; // null = default sistem
+  // Mode native: tangkap audio sistem + mic (macOS ScreenCaptureKit).
+  bool _systemAudioAvailable = false;
+  bool _useSystemAudio = false;
+  String? _systemPath; // path file saat mode audio sistem
+  static const _systemValue = '__system__';
 
   @override
   void initState() {
     super.initState();
     _loadDevices();
+    SystemAudioCapture.available().then((v) {
+      if (mounted) setState(() => _systemAudioAvailable = v);
+    });
   }
 
   Future<void> _loadDevices() async {
@@ -94,6 +103,33 @@ class _RecordScreenState extends State<RecordScreen> {
       });
       return;
     }
+
+    // Mode native: tangkap audio sistem + mic (macOS).
+    if (_useSystemAudio) {
+      try {
+        _systemPath = await _recorder.newRecordingPath();
+        await SystemAudioCapture.start(_systemPath!, includeMic: true);
+      } catch (e) {
+        setState(() {
+          _starting = false;
+          _error = 'Gagal merekam audio sistem. Pastikan izin "Perekaman Layar" '
+              'untuk Notula aktif di System Settings → Privacy & Security → '
+              'Screen Recording, lalu coba lagi.';
+        });
+        return;
+      }
+      await WakelockPlus.enable();
+      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (_paused) return;
+        setState(() => _elapsed++);
+      });
+      setState(() {
+        _recording = true;
+        _starting = false;
+      });
+      return;
+    }
+
     await _recorder.start(device: _selectedDevice);
     await WakelockPlus.enable();
     _ampSub = _recorder.amplitudeStream().listen(_onAmplitude);
@@ -130,7 +166,15 @@ class _RecordScreenState extends State<RecordScreen> {
     _timer?.cancel();
     await _ampSub?.cancel();
     await WakelockPlus.disable();
-    final path = await _recorder.stop();
+    String? path;
+    if (_useSystemAudio) {
+      try {
+        path = await SystemAudioCapture.stop();
+      } catch (_) {}
+      path ??= _systemPath;
+    } else {
+      path = await _recorder.stop();
+    }
     if (path == null) {
       if (mounted) Navigator.pop(context);
       return;
@@ -173,7 +217,8 @@ class _RecordScreenState extends State<RecordScreen> {
   }
 
   Widget _devicePicker() {
-    final value = _selectedDevice?.id ?? '';
+    final value =
+        _useSystemAudio ? _systemValue : (_selectedDevice?.id ?? '');
     final loopback =
         _selectedDevice != null && _isLoopback(_selectedDevice!.label);
     return Padding(
@@ -210,6 +255,11 @@ class _RecordScreenState extends State<RecordScreen> {
                 isExpanded: true,
                 value: value,
                 items: [
+                  if (_systemAudioAvailable)
+                    const DropdownMenuItem(
+                        value: _systemValue,
+                        child: Text('🔊 Audio sistem + mikrofon (rekam Zoom langsung)',
+                            overflow: TextOverflow.ellipsis)),
                   const DropdownMenuItem(
                       value: '',
                       child: Text('Default sistem (mikrofon)',
@@ -223,9 +273,15 @@ class _RecordScreenState extends State<RecordScreen> {
                           overflow: TextOverflow.ellipsis))),
                 ],
                 onChanged: (id) => setState(() {
-                  _selectedDevice = (id == null || id.isEmpty)
-                      ? null
-                      : _devices.firstWhere((d) => d.id == id);
+                  if (id == _systemValue) {
+                    _useSystemAudio = true;
+                    _selectedDevice = null;
+                  } else {
+                    _useSystemAudio = false;
+                    _selectedDevice = (id == null || id.isEmpty)
+                        ? null
+                        : _devices.firstWhere((d) => d.id == id);
+                  }
                 }),
               ),
             ),
@@ -284,11 +340,28 @@ class _RecordScreenState extends State<RecordScreen> {
         row(Icons.groups_rounded, const Color(0xFF0EA5E9),
             'Rapat tatap muka / tanpa Zoom',
             'pilih "Default sistem (mikrofon)" — menangkap suara di sekitar laptop.'),
-        row(Icons.videocam_rounded, AppTheme.primary, 'Rapat online (Zoom/Teams/Meet)',
-            loopName != null
-                ? 'pilih $loopName (audio sistem) agar suara semua peserta ikut terekam.'
-                : 'pasang perangkat loopback (BlackHole di Mac / VB-Cable di Windows), lalu muat ulang (⟳) & pilih di sini. Tanpa itu, hanya mikrofon yang terekam.'),
-        if (loopbackSelected)
+        row(
+            Icons.videocam_rounded,
+            AppTheme.primary,
+            'Rapat online (Zoom/Teams/Meet)',
+            _systemAudioAvailable
+                ? 'pilih "🔊 Audio sistem + mikrofon" di atas — merekam suara semua peserta + suara Anda, tanpa instal apa pun.'
+                : (loopName != null
+                    ? 'pilih $loopName (audio sistem) agar suara semua peserta ikut terekam.'
+                    : 'pasang perangkat loopback (BlackHole/VB-Cable), lalu muat ulang (⟳) & pilih di sini. Tanpa itu, hanya mikrofon yang terekam.')),
+        if (_useSystemAudio)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(
+              'Saat pertama kali, macOS akan minta izin "Perekaman Layar" untuk Notula — izinkan, lalu mulai rekam lagi. Indikator level suara tidak aktif pada mode ini.',
+              style: TextStyle(
+                  fontSize: 11.5,
+                  color: Colors.grey.shade500,
+                  fontStyle: FontStyle.italic,
+                  height: 1.35),
+            ),
+          )
+        else if (loopbackSelected)
           Padding(
             padding: const EdgeInsets.only(top: 2),
             child: Text(
@@ -483,6 +556,21 @@ class _RecordScreenState extends State<RecordScreen> {
       return Text('Dijeda',
           style: TextStyle(color: Colors.grey.shade600, fontSize: 16));
     }
+    if (_useSystemAudio) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: const [
+          Icon(Icons.cast_connected_rounded,
+              color: AppTheme.statusDone, size: 18),
+          SizedBox(width: 6),
+          Text('Merekam audio sistem + mikrofon',
+              style: TextStyle(
+                  color: AppTheme.statusDone,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600)),
+        ],
+      );
+    }
     if (_micProblem) {
       return Column(
         children: [
@@ -538,14 +626,17 @@ class _RecordScreenState extends State<RecordScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _circleButton(
-          icon: _paused ? Icons.play_arrow_rounded : Icons.pause_rounded,
-          gradient: AppTheme.brandGradient,
-          label: _paused ? 'Lanjut' : 'Jeda',
-          onTap: _togglePause,
-          size: 64,
-        ),
-        const SizedBox(width: 40),
+        // Jeda tidak tersedia pada mode audio sistem (ScreenCaptureKit).
+        if (!_useSystemAudio) ...[
+          _circleButton(
+            icon: _paused ? Icons.play_arrow_rounded : Icons.pause_rounded,
+            gradient: AppTheme.brandGradient,
+            label: _paused ? 'Lanjut' : 'Jeda',
+            onTap: _togglePause,
+            size: 64,
+          ),
+          const SizedBox(width: 40),
+        ],
         _circleButton(
           icon: Icons.stop_rounded,
           gradient: AppTheme.recordGradient,

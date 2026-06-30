@@ -126,9 +126,10 @@ Buka **Pengaturan** di app lalu isi:
 > Default sengaja dikosongkan demi keamanan — wajib diisi sekali; tersimpan di perangkat.
 
 ### 🎧 Merekam rapat online (Zoom/Teams/Meet)
-Perekaman langsung menangkap **mikrofon** saja — suara peserta lain (lewat speaker/headphone) tidak ikut terekam. Dua cara menangkap audio rapat online:
-1. **Impor** file rekaman dari aplikasi rapat (jika Anda host/diizinkan) — paling bersih.
-2. **Perangkat loopback**: pasang **BlackHole** (macOS) atau **VB-Cable** (Windows), arahkan output sistem ke sana (mis. *Multi-Output Device*), lalu di layar **Rekam → Sumber audio** pilih perangkat loopback tersebut. Notula akan merekam seluruh audio sistem.
+Perekaman default menangkap **mikrofon** saja — suara peserta lain (lewat speaker/headphone) tidak ikut. Cara menangkap audio rapat online:
+1. **macOS 13+ (paling mudah)**: di **Rekam → Sumber audio** pilih **"🔊 Audio sistem + mikrofon"**. Notula merekam suara semua peserta + suara Anda langsung (native ScreenCaptureKit), **tanpa instal apa pun**. Saat pertama, izinkan **Perekaman Layar** di System Settings → Privacy & Security.
+2. **Impor** file rekaman dari aplikasi rapat (jika Anda host/diizinkan).
+3. **Perangkat loopback** (Windows / macOS lama): pasang **BlackHole**/**VB-Cable**, arahkan output sistem ke sana (*Multi-Output Device*), lalu pilih perangkat itu di **Sumber audio**.
 
 ---
 

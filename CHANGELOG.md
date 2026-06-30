@@ -3,6 +3,10 @@
 Semua perubahan penting pada proyek **Notula** didokumentasikan di sini.
 Format mengikuti [Keep a Changelog](https://keepachangelog.com/), penomoran [SemVer](https://semver.org/).
 
+## [1.12.0] — 2026-06-30
+### Ditambahkan
+- **Rekam audio sistem + mikrofon native (macOS 13+)** — opsi sumber audio "🔊 Audio sistem + mikrofon" merekam suara semua peserta Zoom/Teams/Meet **digabung** dengan suara Anda, **tanpa perlu BlackHole/VB-Cable**. Memakai ScreenCaptureKit + AVAudioEngine via platform channel. Saat pertama dipakai, macOS meminta izin **Perekaman Layar**.
+
 ## [1.11.2] — 2026-06-29
 ### Diubah
 - **Panduan Sumber Audio lebih jelas**: dropdown menandai tiap perangkat (`· mikrofon` / `· audio sistem`), dan ada panduan per-skenario — **rapat tatap muka/tanpa Zoom → "Default sistem (mikrofon)"**, **rapat online → perangkat loopback** (disebut langsung namanya bila terdeteksi, mis. "BlackHole 2ch").
