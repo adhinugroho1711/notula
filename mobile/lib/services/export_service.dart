@@ -107,31 +107,55 @@ String buildMarkdown(Meeting m) {
   return b.toString();
 }
 
+/// Saring teks agar aman dirender font bawaan PDF (Helvetica) — petakan
+/// karakter tipografi ke ASCII & buang karakter non-ASCII (cegah kotak "tofu").
+String _pdfSafe(String t) {
+  const map = {
+    '•': '-', '◦': '-', '▪': '-', '‣': '-', '·': '-',
+    '–': '-', '—': '-', '−': '-',
+    '“': '"', '”': '"', '„': '"', '‟': '"',
+    '‘': "'", '’': "'", '‚': "'",
+    '…': '...', '→': '->', '←': '<-', '⇒': '=>', '×': 'x',
+    '™': '(TM)', '®': '(R)', '©': '(C)', ' ': ' ',
+  };
+  final sb = StringBuffer();
+  for (final r in t.runes) {
+    final ch = String.fromCharCode(r);
+    if (map.containsKey(ch)) {
+      sb.write(map[ch]);
+    } else if (r < 128) {
+      sb.write(ch);
+    }
+    // karakter non-ASCII lain (emoji, dll) dibuang agar tidak jadi kotak
+  }
+  return sb.toString();
+}
+
 /// Notulen sebagai PDF (bytes).
 Future<Uint8List> buildPdfBytes(Meeting m) async {
   final s = m.summary;
   final doc = pw.Document();
   final widgets = <pw.Widget>[
-    pw.Text(_title(m),
+    pw.Text(_pdfSafe(_title(m)),
         style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
     pw.SizedBox(height: 4),
-    pw.Text(_meta(m),
+    pw.Text(_pdfSafe(_meta(m)),
         style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
     pw.Divider(),
   ];
 
   pw.Widget heading(String t) => pw.Padding(
       padding: const pw.EdgeInsets.only(top: 10, bottom: 4),
-      child: pw.Text(t,
+      child: pw.Text(_pdfSafe(t),
           style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)));
   pw.Widget bullet(String t) => pw.Padding(
       padding: const pw.EdgeInsets.only(left: 8, bottom: 2),
-      child: pw.Text('•  $t', style: const pw.TextStyle(fontSize: 11)));
+      child: pw.Text(_pdfSafe('- $t'), style: const pw.TextStyle(fontSize: 11)));
 
   if (s != null) {
     if (s.ikhtisar.isNotEmpty) {
       widgets..add(heading('Ikhtisar'))
-        ..add(pw.Text(s.ikhtisar, style: const pw.TextStyle(fontSize: 11)));
+        ..add(pw.Text(_pdfSafe(s.ikhtisar), style: const pw.TextStyle(fontSize: 11)));
     }
     if (s.tugasPenting.isNotEmpty) {
       widgets.add(heading('Tugas Penting'));
@@ -143,7 +167,7 @@ Future<Uint8List> buildPdfBytes(Meeting m) async {
         if (g.topik.isNotEmpty) {
           widgets.add(pw.Padding(
               padding: const pw.EdgeInsets.only(top: 4, bottom: 2),
-              child: pw.Text(g.topik,
+              child: pw.Text(_pdfSafe(g.topik),
                   style: pw.TextStyle(
                       fontSize: 12, fontWeight: pw.FontWeight.bold))));
         }
@@ -155,7 +179,7 @@ Future<Uint8List> buildPdfBytes(Meeting m) async {
       for (final w in s.wawasanCerdas) {
         widgets.add(pw.Padding(
             padding: const pw.EdgeInsets.only(top: 4, bottom: 2),
-            child: pw.Text(w.judul,
+            child: pw.Text(_pdfSafe(w.judul),
                 style:
                     pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold))));
         widgets.addAll(w.poin.map(bullet));
